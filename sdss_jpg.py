@@ -1,4 +1,3 @@
-
 def demo():  
     '''
     Get jpg image for UGC 01962, view it, 
@@ -6,8 +5,6 @@ def demo():
     '''
     jpg = SdssJpg(37.228, 0.37)
     jpg.show()
-    jpg.clean_up()
-
 
 
 class SdssJpg(object):
@@ -38,28 +35,42 @@ class SdssJpg(object):
         self.savename = savename
         if init_download: self.download()
 
+    def __del__(self):
+        from os import system
+        # remove the temporary jpg file
+        system('rm '+self.savename)
         
     def download(self):
         from urllib import urlretrieve
+        from PIL import Image
+        from numpy import array, uint8
         url = 'http://skyservice.pha.jhu.edu/dr%i/ImgCutout/getjpeg.aspx?'%self.DR
         url += 'ra=%0.5f&dec=%0.5f&'%(self.ra, self.dec)
         url += 'scale=%0.5f&'%self.scale
         url += 'width=%i&height=%i'%(self.width, self.height)
         urlretrieve(url, self.savename)
-
-
-    def data(self):
-        from PIL import Image
-        import numpy as np
-        return np.array(Image.open(self.savename), dtype=np.uint8)
+        self.data = array(Image.open(self.savename), dtype=uint8)
 
     def show(self):
         import matplotlib.pylab as pl
-        pl.imshow(self.data())
-
-    def clean_up(self):
-        from os import system
-        system('rm '+self.savename)
+        pl.imshow(self.data)
 
 
-
+def study25():
+    '''
+    Dumb function for viewing images of 25 galaxies
+    whose (RA, DEC) positions are in tmp.csv
+    '''
+    from pandas.io.parsers import read_csv
+    import matplotlib.pylab as pl
+    pl.ion()
+    x=read_csv('tmp.csv')
+    pl.figure(1)
+    pl.clf()
+    for i in range(25):
+        pl.subplot(5,5,i+1)
+        jpg=SdssJpg(x.ra[i],x.dec[i], width=64, height=64)
+        pl.axis('off');
+        pl.imshow(jpg.data)
+        pl.title('%0.2f'%x.z[i])
+        
